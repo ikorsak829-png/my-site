@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Семейные финансы</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f5f6f8;--card:#fff;--tx:#1c2430;--mu:#6b7686;--bd:#e3e7ee;--ac:#2f6fed;--gr:#1f9d63;--rd:#d94a4a;--or:#e08a1e}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#14181f;--card:#1d232d;--tx:#e8ecf2;--mu:#93a0b3;--bd:#2c3441;--ac:#6b9bff;--gr:#43c48a;--rd:#f07272;--or:#f0a64a}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.w{max-width:960px;margin:0 auto;padding:12px}
+h1{font-size:20px;margin:6px 0 10px}h2{font-size:16px;margin:0 0 8px}
+nav{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5}
+nav button{white-space:nowrap}
+button,input,select{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 10px}
+button{cursor:pointer}button.on,button.p{background:var(--ac);color:#fff;border-color:var(--ac)}
+.g{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px}
+.k{color:var(--mu);font-size:13px}.v{font-size:22px;font-weight:650}
+.gr{color:var(--gr)}.rd{color:var(--rd)}.or{color:var(--or)}
+.f{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.f label{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--mu)}
+.sc{overflow-x:auto}table{border-collapse:collapse;width:100%}td,th{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left;white-space:nowrap}th{color:var(--mu);font-weight:500;font-size:13px}
+td.n,th.n{text-align:right}
+.bar{height:8px;border-radius:4px;background:var(--ac);min-width:2px}.bt{background:var(--bd);border-radius:4px}
+.tr{display:flex;align-items:flex-end;gap:3px;height:120px}.tr div{flex:1;background:var(--ac);border-radius:3px 3px 0 0;min-height:2px}
+.tl{display:flex;gap:3px;font-size:10px;color:var(--mu)}.tl span{flex:1;text-align:center;overflow:hidden}
+.x{background:none;border:none;color:var(--rd);padding:2px 6px}
+.hide{display:none}
+</style></head><body><div class="w">
+<h1>💰 Семейные финансы <span id="sy" class="k" style="font-size:12px;font-weight:400"></span></h1>
+<nav id="nav"></nav><div id="app"></div>
+</div>
+<script>
+const MN=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const INC=['Моя зарплата','Зарплата Маша','Доп. доход'];
+const DC=[['Квартира и ЖКУ 🔑','m'],['Продукты 🛒','m'],['Дом 🏠','m'],['Связь 📱','m'],['Машина 🚗','m'],['Здоровье 🚑','m'],['Транспорт 🚌','m'],['Домашние животные 🐕','m'],['Уход 🪥','o'],['Гардероб 👔','o'],['Спорт 🤺','o'],['Развлечения 🎪','o'],['Техника 🖥️','o'],['Сладости и фастфуд 🍔','o'],['Другое 📑','o']];
+const RAW=[];
+const CATS=[["Продукты🛒","m"],["Какашки💩","o"],["Машина🚗","m"],["Связь📱","m"],["Быт🛋️","m"],["Тренировки🤺","m"],["Бьюти💅","m"],["Лечение","m"],["ЖКУ🔑","m"],["Автобус🚌","m"],["Праздники🥳","m"],["Кафе☕","m"],["Гардерб👕","m"],["Цветы💐","m"],["Досуг😄","m"],["Квартира🏠","m"],["Гигиена🪥","m"],["Уход💇","m"],["Доп. устройствва🔋","m"],["Мелкие покупки","m"],["Локи🐕","m"],["Птица🐦","m"],["Техника🖥️","m"],["Аксесуары","m"],["Здоровье 🚑","m"],["Дом 🏠","m"]];
+const TY={i:'income',e:'expense',t:'toSav',f:'fromSav',a:'adj'};
+function seed(){let id=1;return{tx:RAW.map(r=>{const t={id:id++,date:r[0],type:TY[r[1]],amount:r[2],com:r[7]||''};if(r[3])t.cat=r[3];if(r[4])t.kind=r[4];if(r[5])t.sub=r[5];if(r[6])t.who=r[6];if(r[8]){t.cur=r[8];t.rate=r[9]}return t}),cats:CATS.map(c=>({n:c[0],k:c[1]})),goals:[],nid:RAW.length+1}}
+let S=seed();
+try{const r=localStorage.getItem('fin1');if(r){const o=JSON.parse(r);if(o.tx&&o.tx.length)S=o}}catch(e){}
+const TG=window.Telegram&&Telegram.WebApp,CS=(TG&&TG.initData&&TG.CloudStorage)||null;
+const sy=t=>{const e=document.getElementById('sy');if(e)e.textContent=t};
+const cs=(m,...a)=>new Promise((res,rej)=>CS[m](...a,(err,v)=>err?rej(err):res(v)));
+let cache={},pushT;
+const save=()=>{S.ts=Date.now();try{localStorage.setItem('fin1',JSON.stringify(S))}catch(e){}clearTimeout(pushT);pushT=setTimeout(push,1200)};
+function chunks(s){const r=[];let i=0;while(i<s.length){let e=Math.min(i+3500,s.length);if(e<s.length){const c=s.charCodeAt(e-1);if(c>=0xD800&&c<0xDC00)e--}r.push(s.slice(i,e));i=e}return r}
+async function push(){
+  if(!CS)return;
+  try{sy('☁️ сохранение…');const ch=chunks(JSON.stringify(S)),n=ch.length,old=+(cache.n||0);
+    await Promise.all(ch.map((p,i)=>cache['d'+i]===p?0:cs('setItem','d'+i,p).then(()=>{cache['d'+i]=p})));
+    await cs('setItem','meta',JSON.stringify({n,ts:S.ts}));
+    if(old>n){const ks=[];for(let i=n;i<old;i++){ks.push('d'+i);delete cache['d'+i]}await cs('removeItems',ks)}
+    cache.n=n;sy('☁️ синхронизировано')}catch(e){sy('⚠️ ошибка синхронизации')}
+}
+async function pull(){
+  if(!CS)return;
+  try{sy('☁️ загрузка…');const m=await cs('getItem','meta');
+    if(!m){if(S.tx.length)await push();else sy('☁️ готово');return}
+    const mt=JSON.parse(m);
+    if(mt.ts>(S.ts||0)){const ks=[];for(let i=0;i<mt.n;i++)ks.push('d'+i);const v=await cs('getItems',ks),parts=ks.map(k=>v[k]||'');
+      const o=JSON.parse(parts.join(''));ks.forEach((k,i)=>cache[k]=parts[i]);cache.n=mt.n;S=o;
+      try{localStorage.setItem('fin1',JSON.stringify(S))}catch(e){}render();sy('☁️ синхронизировано')}
+    else if(mt.ts<(S.ts||0)){cache.n=mt.n;await push()}
+    else sy('☁️ синхронизировано')
+  }catch(e){sy('⚠️ ошибка синхронизации')}
+}
+const $=s=>document.querySelector(s);
+const today=new Date().toISOString().slice(0,10);
+const f=n=>(+n||0).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let hm=today.slice(0,7),tab='home',st={mode:'month',a:today.slice(0,7),b:''},form={type:'expense'};
+const TABS=[['home','Главная'],['ops','Операции'],['sav','Сбережения'],['goals','Цели'],['stat','Статистика'],['cats','Категории']];
+const sorted=()=>[...S.tx].sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id);
+
+function calc(){
+  const sv={BYN:{a:0,b:0},USD:{a:0,b:0},EUR:{a:0,b:0}};let prior=0;
+  for(const t of sorted()){
+    if(t.type=='income')prior+=t.amount;
+    else if(t.type=='expense')prior-=t.amount;
+    else if(t.type=='adj')prior+=t.amount;
+    else if(t.type=='toSav'){prior-=t.amount;const s=sv[t.cur];s.b+=t.amount;s.a+=t.cur=='BYN'?t.amount:t.amount/t.rate}
+    else if(t.type=='fromSav'){prior+=t.amount;const s=sv[t.cur];
+      if(t.cur=='BYN'){s.a-=t.amount;s.b-=t.amount}else{const fe=t.amount/t.rate,avg=s.a?s.b/s.a:t.rate;s.a-=fe;s.b-=fe*avg}}
+  }
+  const total=sv.BYN.b+sv.USD.b+sv.EUR.b;
+  const ms={};S.tx.filter(t=>t.type=='expense').forEach(t=>{const m=t.date.slice(0,7);ms[m]=(ms[m]||0)+t.amount});
+  const keys=Object.keys(ms).sort().slice(-3);
+  const avg=keys.length?keys.reduce((s,k)=>s+ms[k],0)/keys.length:0;
+  return{sv,prior,total,avg,months:avg?total/avg:0,nm:keys.length};
+}
+const sumBy=(arr,fn)=>arr.reduce((m,t)=>{const k=fn(t);m[k]=(m[k]||0)+t.amount;return m},{});
+
+function render(){
+  $('#nav').innerHTML=TABS.map(t=>`<button data-t="${t[0]}" class="${tab==t[0]?'on':''}">${t[1]}</button>`).join('');
+  $('#app').innerHTML=({home,ops,sav,goals,stat,cats})[tab]();
+}
+function home(){
+  const c=calc(),m=hm,mt=S.tx.filter(t=>t.date.startsWith(m));
+  const inc=sumBy(mt.filter(t=>t.type=='income'),t=>t.cat),ex=mt.filter(t=>t.type=='expense'),
+  ti=Object.values(inc).reduce((a,b)=>a+b,0),te=ex.reduce((a,t)=>a+t.amount,0),
+  fs=mt.filter(t=>t.type=='fromSav').reduce((a,t)=>a+t.amount,0),ts=mt.filter(t=>t.type=='toSav').reduce((a,t)=>a+t.amount,0);
+  return `<div class="g">
+  <div class="c"><div class="k">Приор (основной)</div><div class="v">${f(c.prior)} BYN</div></div>
+  <div class="c"><div class="k">Сбережения (всего)</div><div class="v">${f(c.total)} BYN</div></div>
+  <div class="c"><div class="k">Подушка безопасности</div><div class="v ${c.months<3?'or':'gr'}">${c.avg?c.months.toFixed(1)+' мес.':'—'}</div></div></div>
+  <div class="c"><h2>Бюджет: ${MN[+m.slice(5)-1]} ${m.slice(0,4)} <input type="month" data-hm="1" value="${m}" style="margin-left:8px"></h2><table>
+  ${INC.map(n=>`<tr><td>${n}</td><td class="n gr">${f(inc[n])}</td></tr>`).join('')}
+  <tr><td><b>Бюджет (доходы)</b></td><td class="n"><b>${f(ti)}</b></td></tr>
+  <tr><td>Расходы</td><td class="n rd">${f(te)}</td></tr>
+  <tr><td>Отложено в сбережения (не расход)</td><td class="n">${f(ts)}</td></tr>
+  <tr><td>Взято из сбережений</td><td class="n">${f(fs)}</td></tr>
+  <tr><td><b>Сальдо месяца (доходы − расходы)</b></td><td class="n ${ti-te<0?'rd':'gr'}"><b>${f(ti-te)}</b></td></tr></table></div>
+  <div class="c"><h2>Сверка остатка Приор</h2><div class="k">Если расчётный остаток не совпадает с реальным, введите фактический: приложение добавит корректировку.</div><div style="display:flex;gap:6px;margin-top:6px"><input type="number" step="0.01" id="rc" placeholder="Фактический остаток"><button data-act="rec">Сверить</button></div></div>
+  <div class="c k">Данные хранятся в облаке Telegram и синхронизируются между вашими устройствами. Резервную копию всё равно делайте во вкладке «Категории».</div>`;
+}
+function ops(){
+  const t=form.type,isT=t=='toSav'||t=='fromSav',cs=S.cats;
+  const first=cs[0]||{n:'',k:'m'};
+  const list=sorted().reverse().slice(0,100);
+  const lbl={income:'Доход',expense:'Расход',toSav:'→ Сбережения',fromSav:'← Из сбережений'};
+  const lbl2={...lbl,adj:'Корректировка'};
+  return `<div class="c"><h2>Новая операция</h2>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${Object.keys(lbl).map(k=>`<button data-ty="${k}" class="${t==k?'p':''}">${lbl[k]}</button>`).join('')}</div>
+  <div class="f">
+  <label>Дата<input type="date" id="d" value="${today}"></label>
+  <label>Сумма (BYN)<input type="number" step="0.01" id="a" inputmode="decimal"></label>
+  ${t=='income'?`<label>Категория<select id="c">${INC.map(n=>`<option>${n}</option>`).join('')}</select></label>`:''}
+  ${t=='expense'?`<label>Категория<select id="c">${cs.map(c=>`<option data-k="${c.k}">${esc(c.n)}</option>`).join('')}</select></label>
+  <label>Тип<select id="k"><option value="m" ${first.k=='m'?'selected':''}>Обязательный</option><option value="o" ${first.k=='o'?'selected':''}>Необязательный</option></select></label>`:''}
+  ${isT?`<label>Валюта<select id="cu"><option>BYN</option><option>USD</option><option>EUR</option></select></label>
+  <label>Курс (BYN за 1 ед.)<input type="number" step="0.0001" id="r" inputmode="decimal" placeholder="для USD/EUR"></label>`:''}
+  ${t=='expense'?'<label>Подкатегория<input id="s"></label>':''}${!isT?'<label>Кто<select id="w"><option>Семейный</option><option>Илья</option><option>Маша</option></select></label>':''}<label>Комментарий${isT?' *':''}<input id="m" placeholder="${isT?'обязательно':'необязательно'}"></label></div>
+  <p class="k" id="pv"></p><button class="p" data-act="add">Добавить</button> <span id="er" class="rd"></span></div>
+  <div class="c sc"><h2>Последние 100 операций</h2><table><tr><th>Дата</th><th>Вид</th><th>Категория</th><th class="n">Сумма</th><th>Комментарий</th><th></th></tr>
+  ${list.map(x=>`<tr><td>${x.date}</td><td>${lbl2[x.type]}${x.kind?(x.kind=='m'?' · обяз.':' · необяз.'):''}</td><td>${esc(x.cat||(x.cur?x.cur+(x.cur!='BYN'?' @'+x.rate:''):''))}</td><td class="n ${x.type=='expense'?'rd':x.type=='income'?'gr':''}">${f(x.amount)}</td><td>${esc([x.sub,x.who,x.com].filter(Boolean).join(' · '))}</td><td><button class="x" data-del="${x.id}">✕</button></td></tr>`).join('')||'<tr><td colspan=6 class="k">Пока пусто</td></tr>'}</table></div>`;
+}
+function sav(){
+  const c=calc(),n={BYN:'Белорусский рубль',USD:'Доллар США',EUR:'Евро'};
+  return `<div class="g">${['BYN','USD','EUR'].map(k=>`<div class="c"><div class="k">${n[k]}</div><div class="v">${f(c.sv[k].a)} ${k}</div>${k!='BYN'?`<div class="k">вложено ${f(c.sv[k].b)} BYN · средний курс ${c.sv[k].a>0?f(c.sv[k].b/c.sv[k].a):'—'}</div>`:''}</div>`).join('')}</div>
+  <div class="c"><div class="k">Всего накоплений в BYN (по вашим курсам покупки)</div><div class="v">${f(c.total)} BYN</div></div>
+  <div class="c"><h2>🛟 Подушка безопасности</h2>
+  <div class="k">Расходы одного месяца жизни (в среднем за ${c.nm||0} посл. мес. с данными)</div><div class="v">${f(c.avg)} BYN</div>
+  <div class="k" style="margin-top:8px">Накоплений хватит на</div><div class="v ${c.months<3?'or':'gr'}">${c.avg?c.months.toFixed(1)+' мес.':'— (нет расходов)'}</div></div>`;
+}
+function goals(){
+  const c=calc();
+  return `<div class="c"><h2>Новая цель</h2><div class="f">
+  <label>Название<input id="gn"></label><label>Полная стоимость<input type="number" id="gc"></label>
+  <label>Уже накоплено<input type="number" id="gs" value="0"></label><label>Откладываю в месяц<input type="number" id="gm"></label></div>
+  <p></p><button class="p" data-act="goal">Добавить цель</button></div>
+  ${S.goals.map((g,i)=>{const left=Math.max(g.cost-g.saved,0),mo=g.mon>0?Math.ceil(left/g.mon):null,
+  d=mo!==null?new Date(new Date().getFullYear(),new Date().getMonth()+mo,1):null,p=g.cost?Math.min(100,g.saved/g.cost*100):0;
+  return `<div class="c"><div style="display:flex;justify-content:space-between"><b>${esc(g.name)}</b><button class="x" data-gd="${i}">✕</button></div>
+  <div class="k">${f(g.saved)} из ${f(g.cost)} BYN · осталось ${f(left)}</div><div class="bt"><div class="bar" style="width:${p}%"></div></div>
+  <div style="margin-top:6px">${left==0?'🎉 Цель достигнута':mo===null?'<span class="k">Укажите ежемесячный взнос для оценки срока</span>':`≈ ${mo} мес. (до ${MN[d.getMonth()]} ${d.getFullYear()})`}</div>
+  <div style="margin-top:6px;display:flex;gap:6px"><input type="number" id="gp${i}" placeholder="Пополнить на…" style="width:150px"><button data-gp="${i}">+ Пополнить</button></div></div>`}).join('')||'<div class="c k">Целей пока нет</div>'}`;
+}
+function inP(k){return st.mode=='day'?`<input type="date" data-p="${k}" value="${st[k]}">`:st.mode=='month'?`<input type="month" data-p="${k}" value="${st[k]}">`:`<input type="number" data-p="${k}" value="${st[k]}" style="width:100px">`}
+function def(){const d=new Date(),y=d.getFullYear(),m=d.getMonth();
+  if(st.mode=='day'){st.a=today;st.b=new Date(Date.now()-864e5).toISOString().slice(0,10)}
+  else if(st.mode=='month'){st.a=today.slice(0,7);const p=new Date(y,m-1,1);st.b=p.getFullYear()+'-'+String(p.getMonth()+1).padStart(2,'0')}
+  else{st.a=String(y);st.b=String(y-1)}}
+if(!st.b)def();
+function stat(){
+  const ex=S.tx.filter(t=>t.type=='expense'),A=ex.filter(t=>t.date.startsWith(st.a)),B=ex.filter(t=>t.date.startsWith(st.b));
+  const ta=A.reduce((s,t)=>s+t.amount,0),tb=B.reduce((s,t)=>s+t.amount,0);
+  const ca=sumBy(A,t=>t.cat),cb=sumBy(B,t=>t.cat),names=[...new Set([...Object.keys(ca),...Object.keys(cb)])].sort((x,y)=>(ca[y]||0)-(ca[x]||0));
+  const mx=Math.max(...names.map(n=>ca[n]||0),1);
+  const dl=(a,b)=>{const d=a-b;return `<span class="${d>0?'rd':'gr'}">${d>0?'+':''}${f(d)}${b?` (${d>0?'+':''}${(d/b*100).toFixed(0)}%)`:''}</span>`};
+  const inc=S.tx.filter(t=>t.type=='income'&&t.date.startsWith(st.a)).reduce((s,t)=>s+t.amount,0);
+  const days=new Set(A.map(t=>t.date)).size,must=A.filter(t=>t.kind=='m').reduce((s,t)=>s+t.amount,0);
+  // trend
+  let tr='';
+  if(st.mode!='day'){const n=st.mode=='month'?new Date(+st.a.slice(0,4),+st.a.slice(5),0).getDate():12,v=Array(n).fill(0);
+    A.forEach(t=>{const i=st.mode=='month'?+t.date.slice(8)-1:+t.date.slice(5,7)-1;v[i]+=t.amount});
+    const m=Math.max(...v,1);
+    tr=`<div class="c"><h2>${st.mode=='month'?'Траты по дням':'Траты по месяцам'}</h2><div class="tr">${v.map((x,i)=>`<div style="height:${x/m*100}%" title="${i+1}: ${f(x)}"></div>`).join('')}</div><div class="tl">${v.map((x,i)=>`<span>${i+1}</span>`).join('')}</div></div>`}
+  const wd=Array(7).fill(0);A.forEach(t=>{wd[(new Date(t.date).getDay()+6)%7]+=t.amount});const wm=Math.max(...wd,1);
+  const top=[...A].sort((x,y)=>y.amount-x.amount).slice(0,5);
+  return `<div class="c"><h2>Период</h2><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+  ${['day','month','year'].map((m,i)=>`<button data-m="${m}" class="${st.mode==m?'p':''}">${['День','Месяц','Год'][i]}</button>`).join('')}
+  <span class="k">Период А</span>${inP('a')}<span class="k">сравнить с Б</span>${inP('b')}</div></div>
+  <div class="g"><div class="c"><div class="k">Расходы А</div><div class="v">${f(ta)}</div></div>
+  <div class="c"><div class="k">Расходы Б</div><div class="v">${f(tb)}</div><div class="k">Δ ${dl(ta,tb)}</div></div>
+  <div class="c"><div class="k">Доходы А / сальдо</div><div class="v">${f(inc)}</div><div class="k ${inc-ta<0?'rd':'gr'}">${f(inc-ta)}</div></div>
+  <div class="c"><div class="k">Средний расход в день с тратами</div><div class="v">${f(days?ta/days:0)}</div></div>
+  <div class="c"><div class="k">Обязательные / необязательные</div><div class="v">${ta?(must/ta*100).toFixed(0):0}% / ${ta?(100-must/ta*100).toFixed(0):0}%</div><div class="k">${f(must)} / ${f(ta-must)}</div></div></div>
+  ${tr}
+  <div class="c sc"><h2>По категориям</h2><table><tr><th>Категория</th><th class="n">А</th><th class="n">Доля А</th><th class="n">Б</th><th class="n">Δ</th><th style="width:25%"></th></tr>
+  ${names.map(n=>`<tr><td>${esc(n)}</td><td class="n">${f(ca[n])}</td><td class="n">${ta?((ca[n]||0)/ta*100).toFixed(0):0}%</td><td class="n">${f(cb[n])}</td><td class="n">${dl(ca[n]||0,cb[n]||0)}</td><td><div class="bt"><div class="bar" style="width:${(ca[n]||0)/mx*100}%"></div></div></td></tr>`).join('')||'<tr><td class="k">Нет данных</td></tr>'}</table></div>
+  <div class="c"><h2>По дням недели (А)</h2>${['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map((d,i)=>`<div style="display:flex;gap:8px;align-items:center"><span style="width:24px">${d}</span><div class="bt" style="flex:1"><div class="bar" style="width:${wd[i]/wm*100}%"></div></div><span class="k" style="width:80px;text-align:right">${f(wd[i])}</span></div>`).join('')}</div>
+  <div class="c sc"><h2>Кто тратил (А)</h2><table>${Object.entries(sumBy(A,t=>t.who||'—')).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`<tr><td>${esc(k)}</td><td class="n">${f(v)}</td><td class="n">${ta?(v/ta*100).toFixed(0):0}%</td></tr>`).join('')||'<tr><td class="k">Нет данных</td></tr>'}</table></div>
+  <div class="c sc"><h2>Топ-5 крупных трат (А)</h2><table>${top.map(t=>`<tr><td>${t.date}</td><td>${esc(t.cat)}</td><td>${esc(t.com)}</td><td class="n">${f(t.amount)}</td></tr>`).join('')||'<tr><td class="k">Нет данных</td></tr>'}</table></div>`;
+}
+function cats(){
+  return `<div class="c"><h2>Категории расходов</h2><div class="f"><label>Название<input id="cn" placeholder="например, Путешествия ✈️"></label>
+  <label>Тип<select id="ck"><option value="m">Обязательный</option><option value="o">Необязательный</option></select></label></div><p></p><button class="p" data-act="cat">Добавить категорию</button></div>
+  <div class="c sc"><table>${S.cats.map((c,i)=>`<tr><td>${esc(c.n)}</td><td>${c.k=='m'?'Обязательный':'Необязательный'}</td><td><button class="x" data-cd="${i}">✕</button></td></tr>`).join('')}</table>
+  <p class="k">Удаление категории не стирает уже внесённые траты.</p></div>
+  <div class="c"><h2>Резервная копия</h2><button data-act="exp">Показать данные (JSON)</button> <button data-act="imp">Загрузить из JSON</button><textarea id="js" style="width:100%;height:90px;margin-top:8px;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px"></textarea></div>`;
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+  if(d.t){tab=d.t}
+  else if(d.ty){form.type=d.ty}
+  else if(d.m){st.mode=d.m;def()}
+  else if(d.del){S.tx=S.tx.filter(t=>t.id!=d.del);save()}
+  else if(d.cd){S.cats.splice(+d.cd,1);save()}
+  else if(d.gd){S.goals.splice(+d.gd,1);save()}
+  else if(d.gp){const v=+$('#gp'+d.gp).value;if(v>0){S.goals[+d.gp].saved+=v;save()}}
+  else if(d.act=='add'){if(!add())return}
+  else if(d.act=='goal'){const n=$('#gn').value.trim(),c=+$('#gc').value;if(!n||!c)return;S.goals.push({name:n,cost:c,saved:+$('#gs').value||0,mon:+$('#gm').value||0});save()}
+  else if(d.act=='cat'){const n=$('#cn').value.trim();if(!n)return;S.cats.push({n,k:$('#ck').value});save()}
+  else if(d.act=='exp'){$('#js').value=JSON.stringify(S);return}
+  else if(d.act=='imp'){try{const o=JSON.parse($('#js').value);if(o.tx){S=o;save()}}catch(x){return}}
+  else if(d.act=='seed'){S=seed();save()}
+  else if(d.act=='rec'){const v=parseFloat($('#rc').value);if(isNaN(v))return;const df=v-calc().prior;if(Math.abs(df)>=0.005){S.tx.push({id:S.nid++,type:'adj',date:today,amount:Math.round(df*100)/100,com:'Сверка остатка Приор'});save()}}
+  else return;
+  render();
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.hm){hm=t.value||hm;render()}
+  else if(t.dataset.p){st[t.dataset.p]=t.value;render()}
+  else if(t.id=='c'&&form.type=='expense'){const k=t.selectedOptions[0].dataset.k;if(k)$('#k').value=k}
+});
+function add(){
+  const type=form.type,amt=+$('#a').value,er=$('#er');
+  if(!(amt>0)){er.textContent='Введите сумму';return false}
+  const t={id:S.nid++,type,date:$('#d').value||today,amount:amt,com:$('#m').value.trim()};
+  if(type=='income')t.cat=$('#c').value;
+  if(type=='expense'){t.cat=$('#c').value;t.kind=$('#k').value}
+  if(type=='toSav'||type=='fromSav'){
+    t.cur=$('#cu').value;t.rate=+$('#r').value;
+    if(!t.com){er.textContent='Укажите комментарий к переводу';return false}
+    if(t.cur!='BYN'&&!(t.rate>0)){er.textContent='Укажите курс';return false}
+  }
+  const w=$('#w');if(w)t.who=w.value;const s=$('#s');if(s&&s.value.trim())t.sub=s.value.trim();S.tx.push(t);save();return true;
+}
+render();
+if(TG){try{TG.ready();TG.expand()}catch(e){}}
+sy(CS?'☁️':'локально: синхронизация работает только внутри Telegram');
+pull();document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
+</script></body></html>
