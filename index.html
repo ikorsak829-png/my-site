@@ -67,9 +67,19 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 .tdot{width:10px;height:10px;border-radius:50%;background:var(--lime);flex:none;position:relative;z-index:1;margin:0 4px}
 .tip{display:flex;gap:12px;align-items:center;background:var(--soft2);border-radius:20px;padding:14px;margin-bottom:12px}.lf{font-size:28px}
 .pt .sh{opacity:0;pointer-events:none;transition:opacity .12s}.pt:hover .sh,.pt.act .sh{opacity:1}
-svg.lc.hv .mxp,svg.lc:hover .mxp{opacity:0}
+svg.lc:hover .mxp,svg.lc:has(.pt.act) .mxp{opacity:0}
 .tr div{position:relative}.tr div:hover,.tr div.act{filter:brightness(1.15)}
 .tr div:hover:after,.tr div.act:after{content:attr(data-v);position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--c1);color:var(--onac);padding:3px 7px;border-radius:8px;font-size:10px;font-weight:600;white-space:nowrap;z-index:3}
+.qa button.on{background:var(--pbtn,var(--ac));color:var(--onpbtn,var(--onac))}
+.b-tot{font-size:32px;font-weight:700;letter-spacing:-.02em;margin:2px 0 10px}
+.b-split{display:flex;height:12px;border-radius:8px;overflow:hidden;background:var(--track);gap:2px}.b-split i{display:block;height:100%}
+.b-lg{margin:10px 0 4px}.b-lr{display:flex;align-items:center;gap:10px;padding:7px 0}
+.b-dot{width:10px;height:10px;border-radius:50%;flex:none}.b-ln{flex:1;min-width:0}.b-lr b{font-weight:600;white-space:nowrap}.b-pc{width:38px;text-align:right}
+.b-m3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.b-mt{background:var(--soft);border-radius:16px;padding:10px 12px;min-width:0}.b-mv{font-weight:700;font-size:15px;margin-top:2px;word-break:break-word}
+.b-sal{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--soft2);border-radius:18px;padding:12px 14px}
+.b-sv{font-size:22px;font-weight:700;color:var(--gr)}.b-sal.neg .b-sv{color:var(--rd)}
+.b-sp{font-weight:700;color:var(--gr);background:var(--card);border-radius:999px;padding:5px 11px;font-size:12px;white-space:nowrap}.b-sal.neg .b-sp{color:var(--rd)}
 </style></head><body><div class="w">
 <h1><span class="logo"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/></svg></span>Korsak Capital <span id="sy" class="k" style="font-size:12px;font-weight:400"></span></h1>
 <nav id="nav"></nav><div id="app"></div>
@@ -221,16 +231,14 @@ function home(){
   ti=Object.values(inc).reduce((a,b)=>a+b,0),te=ex.reduce((a,t)=>a+t.amount,0),
   fs=mt.filter(t=>t.type=='fromSav').reduce((a,t)=>a+t.amount,0),ts=mt.filter(t=>t.type=='toSav').reduce((a,t)=>a+t.amount,0);
   return `<div class="gr0"><div class="gt">${greet()}</div><div class="k">Давайте строить ваше финансовое будущее</div></div>
-  <div class="bal"><div class="k">Остаток на Приор</div><div class="bvr"><span class="hv">${bigNum(c.prior)}</span><span class="bdg ${ti-te<0?'neg':''}">${ti-te>=0?'▲':'▼'} ${Math.abs(ti?(ti-te)/ti*100:0).toFixed(1)}%</span><span class="k">к доходам месяца</span></div>
-  <div class="hr"><div><div class="k">Доходы</div><b>${p(ti)}</b></div><div><div class="k">Расходы</div><b>${p(te)}</b></div></div></div>
-  <div class="qa">${[['income','Доход'],['expense','Расход'],['toSav','В сбер.'],['fromSav','Из сбер.']].map(q=>`<button data-qa="${q[0]}"><span>${AI[q[0]]}</span>${q[1]}</button>`).join('')}</div>
-  <div class="c"><h2>Бюджет: ${MN[+m.slice(5)-1]} ${m.slice(0,4)} ${mpick('hm',m,1)}</h2><table>
-  ${INC.map(n=>`<tr><td>${n}</td><td class="n gr">${p(inc[n])}</td></tr>`).join('')}
-  <tr><td><b>Бюджет (доходы)</b></td><td class="n"><b>${p(ti)}</b></td></tr>
-  <tr><td>Расходы</td><td class="n rd">${p(te)}</td></tr>
-  <tr><td>Переведено в сбережения</td><td class="n">${p(ts)}</td></tr>
-  <tr><td>Взято из сбережений</td><td class="n">${p(fs)}</td></tr>
-  <tr><td><b>Сальдо месяца (доходы − расходы)</b></td><td class="n ${ti-te<0?'rd':'gr'}"><b>${p(ti-te)}</b></td></tr></table></div>
+  <div class="bal"><div class="k">Остаток на Приор</div><div class="bvr"><span class="hv">${bigNum(c.prior)}</span><span class="bdg ${ti-te<0?'neg':''}">${ti-te>=0?'▲':'▼'} ${Math.abs(ti?(ti-te)/ti*100:0).toFixed(1)}%</span><span class="k">к доходам месяца</span></div></div>
+  <div class="c"><div class="hd"><h2>Бюджет ${m.slice(0,4)}</h2>${mpick('hm',m,1)}</div>
+  <div class="k">Доходы месяца</div><div class="b-tot">${r(ti)}</div>
+  <div class="b-split">${INC.map((n,i)=>ti>0&&inc[n]>0?`<i style="width:${inc[n]/ti*100}%;background:${['var(--c1)','var(--c2)','var(--c3)'][i]}"></i>`:'').join('')}</div>
+  <div class="b-lg">${INC.map((n,i)=>`<div class="b-lr"><span class="b-dot" style="background:${['var(--c1)','var(--c2)','var(--c3)'][i]}"></span><span class="b-ln">${n}</span><b>${p(inc[n])}</b><span class="k b-pc">${ti?((inc[n]||0)/ti*100).toFixed(0):0}%</span></div>`).join('')}</div>
+  <div class="b-m3"><div class="b-mt"><div class="k">Расходы</div><div class="b-mv rd">${p(te)}</div></div><div class="b-mt"><div class="k">В сбережения</div><div class="b-mv">${p(ts)}</div></div><div class="b-mt"><div class="k">Из сбережений</div><div class="b-mv">${p(fs)}</div></div></div>
+  <div class="b-sal ${ti-te<0?'neg':''}"><div><div class="k">Сальдо месяца</div><div class="b-sv">${ti-te>=0?'+':'−'}${p(Math.abs(ti-te))}</div></div><div class="b-sp">${ti?(Math.abs(ti-te)/ti*100).toFixed(0):0}% дохода</div></div>
+  <div class="b-sal ${ts-fs<0?'neg':''}" style="margin-top:10px"><div><div class="k">Чистые сбережения месяца</div><div class="b-sv">${ts-fs>=0?'+':'−'}${p(Math.abs(ts-fs))}</div><div class="k">в сбережения − из сбережений</div></div><div class="b-sp">${ts-fs>=0?'+':'−'}${ti?(Math.abs(ts-fs)/ti*100).toFixed(1):'0.0'}% дохода</div></div></div>
   ${recent()}
   ${timeline()}
   <h2 class="sec">Аналитика</h2>
@@ -251,7 +259,7 @@ function ops(){
   const lbl2={income:'Доход',expense:'Расход',toSav:'→ Сбережения',fromSav:'← Из сбережений',adj:'Корректировка',sadj:'Корректировка сбережений'};
   const dfm=d=>d.slice(8)+'.'+d.slice(5,7);
   return `<div class="c"><h2>Новая операция</h2>
-  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${Object.keys(lbl).map(k=>`<button data-ty="${k}" class="${t==k?'p':''}">${lbl[k]}</button>`).join('')}</div>
+  <div class="qa">${[['income','Доход'],['expense','Расход'],['toSav','В сбер.'],['fromSav','Из сбер.']].map(q=>`<button data-ty="${q[0]}" class="${t==q[0]?'on':''}"><span>${AI[q[0]]}</span>${q[1]}</button>`).join('')}</div>
   <div class="f">
   <label>Дата<input type="date" id="d" value="${today}"></label>
   <label><span id="al">Сумма (BYN)</span><input type="number" step="0.01" id="a" inputmode="decimal"></label>
@@ -341,7 +349,7 @@ function stat(){
   if(st.mode!='day'){const n=st.mode=='month'?new Date(+st.a.slice(0,4),+st.a.slice(5),0).getDate():12,v=Array(n).fill(0);
     A.forEach(t=>{const i=st.mode=='month'?+t.date.slice(8)-1:+t.date.slice(5,7)-1;v[i]+=t.amount});
     const m=Math.max(...v,1);
-    tr=`<div class="c"><h2>${st.mode=='month'?'Траты по дням':'Траты по месяцам'}</h2><div class="tr">${v.map((x,i)=>`<div class="${x==m&&x>0?'mx':''}" style="height:${x/m*100}%" data-v="${i+1}: ${p(x)}"></div>`).join('')}</div><div class="tl">${v.map((x,i)=>`<span>${i+1}</span>`).join('')}</div></div>`}
+    tr=`<div class="c"><h2>${st.mode=='month'?'Траты по дням':'Траты по месяцам'}</h2><div class="tr">${v.map((x,i)=>`<div class="${x==m&&x>0?'mx':''}" style="height:${x/m*100}%" data-v="${st.mode=='year'?MN[i]:(i+1)+'.'+st.a.slice(5,7)}: ${p(x)}"></div>`).join('')}</div><div class="tl">${v.map((x,i)=>`<span>${i+1}</span>`).join('')}</div></div>`}
   const wd=Array(7).fill(0);A.forEach(t=>{wd[(new Date(t.date).getDay()+6)%7]+=t.amount});const wm=Math.max(...wd,1);
   const top=[...A].sort((x,y)=>y.amount-x.amount).slice(0,5);
   return `<div class="c"><h2>Период</h2><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
@@ -370,6 +378,8 @@ function cats(){
   <p class="k">Название и тип можно менять: изменения применяются и ко всем уже внесённым тратам этой категории. Удаление категории не стирает внесённые траты.</p></div>
   <div class="c"><h2>Резервная копия</h2><button data-act="exp">Показать данные (JSON)</button> <button data-act="imp">Загрузить из JSON</button><textarea id="js" style="width:100%;height:90px;margin-top:8px;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px"></textarea></div>`;
 }
+document.addEventListener('click',e=>{const ct=e.target.closest&&e.target.closest('.pt,.tr>div');
+  document.querySelectorAll('.pt.act,.tr>div.act').forEach(x=>{if(x!==ct)x.classList.remove('act')});if(ct)ct.classList.toggle('act')});
 document.addEventListener('click',e=>{
   const cv=e.target.closest('[data-sv]');if(cv&&!e.target.closest('button')){svc=svc==cv.dataset.sv?null:cv.dataset.sv;render();return}
   const b=e.target.closest('button');if(!b)return;const d=b.dataset;
