@@ -80,6 +80,24 @@ svg.lc:hover .mxp,svg.lc:has(.pt.act) .mxp{opacity:0}
 .b-sal{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--soft2);border-radius:18px;padding:12px 14px}
 .b-sv{font-size:22px;font-weight:700;color:var(--gr)}.b-sal.neg .b-sv{color:var(--rd)}
 .b-sp{font-weight:700;color:var(--gr);background:var(--card);border-radius:999px;padding:5px 11px;font-size:12px;white-space:nowrap}.b-sal.neg .b-sp{color:var(--rd)}
+.seg{display:flex;background:var(--track);border-radius:999px;padding:4px;gap:4px}
+.seg button{flex:1;background:none;color:var(--mu);border-radius:999px;padding:10px 6px;font-weight:600}
+.seg button.on{background:var(--pbtn,var(--ac));color:var(--onpbtn,var(--onac))}
+.nav2{display:flex;align-items:center;justify-content:space-between;margin:14px 0 6px}
+.nav2 .ar{width:46px;height:46px;padding:0;border-radius:50%;font-size:24px;line-height:1;display:grid;place-items:center;background:var(--btn);color:var(--tx)}
+.pl{font-size:22px;font-weight:700;letter-spacing:-.01em;text-align:center}
+.pk{display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap}
+.stt{display:flex;gap:8px;margin:0 0 12px;overflow-x:auto}
+.stt button{flex:1;white-space:nowrap;background:var(--btn);color:var(--tx);padding:10px 14px;font-weight:600}
+.stt button.on{background:var(--pbtn,var(--ac));color:var(--onpbtn,var(--onac))}
+.per{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;margin-bottom:10px}
+.seg.sm{padding:3px;gap:2px}.seg.sm button{padding:7px 16px;font-size:13px}
+.nv{display:flex;align-items:center;gap:4px;margin-left:auto}
+.nv .ar{width:34px;height:34px;padding:0;border-radius:50%;font-size:18px;line-height:1;display:grid;place-items:center;background:var(--btn);color:var(--tx)}
+.pl2{background:none!important;font-size:16px;font-weight:700;padding:4px 8px;color:var(--tx);min-width:110px;text-align:center}
+.c.pk{padding:8px 12px;margin-bottom:10px;justify-content:center}
+.cr{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}.cr:last-of-type{border-bottom:0}
+.cr input{flex:1;min-width:0}.cr select{flex:none;width:104px}.cr .x{flex:none;font-size:16px}
 </style></head><body><div class="w">
 <h1><span class="logo"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/></svg></span>Korsak Capital <span id="sy" class="k" style="font-size:12px;font-weight:400"></span></h1>
 <nav id="nav"></nav><div id="app"></div>
@@ -181,14 +199,14 @@ function lineChart(series,labels,fmt){
   const cw=(W-pl-pr)/Math.max(n-1,1);
   const hit=labels.map((l,i)=>{const x=X(i),ys=series.map(s=>Y(s.vals[i])),w=124,hg=22+series.length*13,bx=Math.min(Math.max(x-w/2,2),W-w-2),by=Math.max(2,Math.min(...ys)-hg-10);
     return `<g class="pt"><rect x="${(x-cw/2).toFixed(1)}" y="0" width="${cw.toFixed(1)}" height="${H}" fill="transparent"/><g class="sh"><line x1="${x.toFixed(1)}" y1="${(by+hg).toFixed(1)}" x2="${x.toFixed(1)}" y2="${H-pb}" stroke="var(--mu)" stroke-opacity=".6" stroke-dasharray="3 3"/>${series.map((s,k)=>`<circle cx="${x.toFixed(1)}" cy="${ys[k].toFixed(1)}" r="4.5" fill="${s.color}" stroke="var(--card)" stroke-width="2"/>`).join('')}<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${w}" height="${hg}" rx="9" fill="var(--c1)"/><text x="${(bx+10).toFixed(1)}" y="${(by+15).toFixed(1)}" font-size="9.5" font-weight="700" fill="var(--onac)">${l}</text>${series.map((s,k)=>`<text x="${(bx+10).toFixed(1)}" y="${(by+29+k*13).toFixed(1)}" font-size="10" fill="var(--onac)">${s.name?s.name+': ':''}${fmt(s.vals[i])}</text>`).join('')}</g></g>`}).join('');
-  const step=n>8?2:1;
+  const step=n>20?3:n>8?2:1;
   const lab=labels.map((l,i)=>i%step?'':`<text x="${X(i).toFixed(1)}" y="${H-6}" text-anchor="middle" font-size="9" fill="var(--mu)">${l}</text>`).join('');
   return `<svg class="lc" viewBox="0 0 ${W} ${H}" width="100%" style="display:block"><defs>${defs}</defs>${body}${lab}${hit}</svg>`}
 function monthKeys(n,end){const o=[];let y=+end.slice(0,4),m=+end.slice(5,7);for(let i=0;i<n;i++){o.unshift(y+'-'+String(m).padStart(2,'0'));m--;if(m==0){m=12;y--}}return o}
 function incExp(keys){const a=keys.map(k=>S.tx.filter(t=>t.type=='income'&&t.date.startsWith(k)).reduce((s,t)=>s+t.amount,0)),b=keys.map(k=>S.tx.filter(t=>t.type=='expense'&&t.date.startsWith(k)).reduce((s,t)=>s+t.amount,0));return{inc:a,exp:b}}
-function ieCard(title,keys){
+function ieCard(title,keys,labels){
   const {inc,exp}=incExp(keys),si=inc.reduce((a,b)=>a+b,0),se=exp.reduce((a,b)=>a+b,0);
-  return `<div class="c"><h2>${title}</h2><div class="lg"><span><i style="background:var(--c1)"></i>${p(si)} доходы</span><span><i style="background:var(--c2)"></i>${p(se)} расходы</span></div>${lineChart([{name:'Доходы',vals:inc,color:'var(--c1)'},{name:'Расходы',vals:exp,color:'var(--c2)'}],keys.map(MS),v=>f(v))}</div>`}
+  return `<div class="c"><h2>${title}</h2><div class="lg"><span><i style="background:var(--c1)"></i>${p(si)} доходы</span><span><i style="background:var(--c2)"></i>${p(se)} расходы</span></div>${lineChart([{name:'Доходы',vals:inc,color:'var(--c1)'},{name:'Расходы',vals:exp,color:'var(--c2)'}],(labels||keys.map(MS)),v=>f(v))}</div>`}
 function yearLine(y){return ieCard('Доходы и расходы по месяцам '+y,Array.from({length:12},(_,i)=>y+'-'+String(i+1).padStart(2,'0')))}
 function donut(parts,center,sub){
   const tot=parts.reduce((s,x)=>s+x.v,0);if(tot<=0)return '';let off=25;
@@ -238,7 +256,7 @@ function home(){
   <div class="b-lg">${INC.map((n,i)=>`<div class="b-lr"><span class="b-dot" style="background:${['var(--c1)','var(--c2)','var(--c3)'][i]}"></span><span class="b-ln">${n}</span><b>${p(inc[n])}</b><span class="k b-pc">${ti?((inc[n]||0)/ti*100).toFixed(0):0}%</span></div>`).join('')}</div>
   <div class="b-m3"><div class="b-mt"><div class="k">Расходы</div><div class="b-mv rd">${p(te)}</div></div><div class="b-mt"><div class="k">В сбережения</div><div class="b-mv">${p(ts)}</div></div><div class="b-mt"><div class="k">Из сбережений</div><div class="b-mv">${p(fs)}</div></div></div>
   <div class="b-sal ${ti-te<0?'neg':''}"><div><div class="k">Сальдо месяца</div><div class="b-sv">${ti-te>=0?'+':'−'}${p(Math.abs(ti-te))}</div></div><div class="b-sp">${ti?(Math.abs(ti-te)/ti*100).toFixed(0):0}% дохода</div></div>
-  <div class="b-sal ${ts-fs<0?'neg':''}" style="margin-top:10px"><div><div class="k">Чистые сбережения месяца</div><div class="b-sv">${ts-fs>=0?'+':'−'}${p(Math.abs(ts-fs))}</div><div class="k">в сбережения − из сбережений</div></div><div class="b-sp">${ts-fs>=0?'+':'−'}${ti?(Math.abs(ts-fs)/ti*100).toFixed(1):'0.0'}% дохода</div></div></div>
+  <div class="b-sal ${ts-fs<0?'neg':''}" style="margin-top:10px"><div><div class="k">Чистые сбережения месяца</div><div class="b-sv">${ts-fs>=0?'+':'−'}${p(Math.abs(ts-fs))}</div><div class="k">в сбережения − из сбережений · ${ts-fs>=0?'+':'−'}${ti?(Math.abs(ts-fs)/ti*100).toFixed(1):'0.0'}% дохода</div></div><div class="b-sp">${ts-fs>=0?'+':'−'}${calc(m).total>0?(Math.abs(ts-fs)/calc(m).total*100).toFixed(1):'0.0'}% от накоплений</div></div></div>
   ${recent()}
   ${timeline()}
   <h2 class="sec">Аналитика</h2>
@@ -330,21 +348,51 @@ function incBlock(){
   const tot=v[0].map((_,m)=>v[0][m]+v[1][m]+v[2][m]),all=[...v,tot],nm=[...N,'Всего'];
   const y0=Math.min(2025,+y),y1=Math.max(new Date().getFullYear()+1,+y),ys=[];for(let i=y0;i<=y1;i++)ys.push(i);
   const dl=d=>d==0?'—':`<span class="${d>0?'gr':'rd'}">${d>0?'+':'−'}${p(Math.abs(d))}</span>`;
-  return `<div class="c"><h2>Доходы по месяцам <select data-iy="1" style="margin-left:8px">${ys.map(a=>`<option ${a==y?'selected':''}>${a}</option>`).join('')}</select></h2><div class="k">Динамика доходов по месяцам года</div></div>
+  return `<div class="c"><h2>Доходы по месяцам ${y}</h2><div class="k">Динамика по источникам</div></div>
   ${yearLine(y)}
   <div class="g">${all.map((a,i)=>{const mx=Math.max(...a,1),sum=a.reduce((x,z)=>x+z,0),cnt=a.filter(x=>x>0).length;
     return `<div class="c"><h2>${nm[i]}</h2><div class="k">За год: ${p(sum)}<br>В среднем за месяц с доходом: ${p(cnt?sum/cnt:0)}</div><div class="tr" style="margin-top:8px">${a.map((x,m)=>`<div style="height:${x/mx*100}%;background:${cl[i]}" data-v="${MN[m]}: ${p(x)}"></div>`).join('')}</div><div class="tl">${a.map((x,m)=>`<span>${m+1}</span>`).join('')}</div></div>`}).join('')}</div>
   <div class="c sc"><table><tr><th>Месяц</th><th class="n">Ильи</th><th class="n">Маши</th><th class="n">Доп. доход</th><th class="n">Всего</th><th class="n">Δ к прошлому мес.</th></tr>
   ${tot.map((x,m)=>`<tr><td>${MN[m]}</td><td class="n">${p(v[0][m])}</td><td class="n">${p(v[1][m])}</td><td class="n">${p(v[2][m])}</td><td class="n"><b>${p(x)}</b></td><td class="n">${m&&(x||tot[m-1])?dl(x-tot[m-1]):'—'}</td></tr>`).join('')}
   <tr><td><b>За ${y}</b></td>${all.map(a=>`<td class="n"><b>${p(a.reduce((s,z)=>s+z,0))}</b></td>`).join('')}<td></td></tr></table></div>`}
-function stat(){
-  const ex=S.tx.filter(t=>t.type=='expense'),A=ex.filter(t=>t.date.startsWith(st.a));
-  const ta=A.reduce((s,t)=>s+t.amount,0);
-  const ca=sumBy(A,t=>t.cat),names=Object.keys(ca).sort((x,y)=>(ca[y]||0)-(ca[x]||0));
-  const mx=Math.max(...names.map(n=>ca[n]||0),1);
-  const inc=S.tx.filter(t=>t.type=='income'&&t.date.startsWith(st.a)).reduce((s,t)=>s+t.amount,0);
-  const days=new Set(A.map(t=>t.date)).size,must=A.filter(t=>t.kind=='m').reduce((s,t)=>s+t.amount,0);
-  // trend
+const sumA=a=>a.reduce((s,t)=>s+t.amount,0);
+function periodDays(){
+  if(st.mode=='day')return 1;
+  if(st.mode=='month'){const y=+st.a.slice(0,4),m=+st.a.slice(5,7),dim=new Date(y,m,0).getDate();return st.a==today.slice(0,7)?+today.slice(8):dim}
+  const y=+st.a;if(String(y)==today.slice(0,4))return Math.round((new Date(today)-new Date(y+'-01-01'))/864e5)+1;return y%4==0?366:365}
+function periodHdr(){
+  if(st.mode=='day'){st.mode='month';st.a=st.a.slice(0,7)}
+  const lab=st.mode=='month'?MN[+st.a.slice(5,7)-1]+' '+st.a.slice(0,4):st.a;
+  return `<div class="c per"><div class="seg sm">${[['month','Месяц'],['year','Год']].map(q=>`<button data-m="${q[0]}" class="${st.mode==q[0]?'on':''}">${q[1]}</button>`).join('')}</div>
+  <div class="nv"><button class="ar" data-pn="-1" aria-label="Назад">‹</button><button class="pl2" data-pk="1" title="Выбрать период">${lab}</button><button class="ar" data-pn="1" aria-label="Вперёд">›</button></div></div>
+  ${st.pk?`<div class="c pk">${inP('a')}</div>`:''}
+  <div class="stt">${[['ov','Обзор'],['ex','Расходы'],['in','Доходы']].map(q=>`<button data-stt="${q[0]}" class="${st.tab==q[0]?'on':''}">${q[1]}</button>`).join('')}</div>`}
+function opRows(list){
+  const ic={income:'ig',expense:'ir'},tt={toSav:'В сбережения',fromSav:'Из сбережений',adj:'Корректировка',sadj:'Корректировка сбережений'};
+  return list.map(x=>{const pl=x.type=='income'||x.type=='fromSav';
+    const a=x.cur&&x.cur!='BYN'&&x.type!='sadj'?(x.fx!=null?f(x.fx):f(x.amount/x.rate))+' '+x.cur:p(Math.abs(x.amount));
+    return `<div class="rw"><div class="ib ${ic[x.type]||'ia'}">${AI[x.type]||AI.adj}</div><div class="rm"><div class="rt">${esc(x.cat||tt[x.type]||'')}</div><div class="k">${x.date.slice(8)}.${x.date.slice(5,7)}${x.com?' · '+esc(x.com):''}</div></div><div class="ra ${pl?'gr':''}">${pl?'+':'−'}${a}</div></div>`}).join('')}
+function incSplit(I,ti){
+  const inc=sumBy(I,t=>t.cat),C=['var(--c1)','var(--c2)','var(--c3)'];
+  return `<div class="b-split">${INC.map((n,i)=>ti>0&&inc[n]>0?`<i style="width:${inc[n]/ti*100}%;background:${C[i]}"></i>`:'').join('')}</div>
+  <div class="b-lg">${INC.map((n,i)=>`<div class="b-lr"><span class="b-dot" style="background:${C[i]}"></span><span class="b-ln">${n}</span><b>${p(inc[n])}</b><span class="k b-pc">${ti?((inc[n]||0)/ti*100).toFixed(0):0}%</span></div>`).join('')}</div>`}
+function statOv(A,I,ta,ti){
+  const ns=S.tx.filter(t=>t.date.startsWith(st.a)&&(t.type=='toSav'||t.type=='fromSav')).reduce((s,t)=>s+(t.type=='toSav'?t.amount:-t.amount),0);
+  const ca=sumBy(A,t=>t.cat),top=Object.entries(ca).sort((a,b)=>b[1]-a[1]).slice(0,3),tm=top.length?top[0][1]:1;
+  const nd=periodDays();let chart='';
+  if(st.mode=='year')chart=ieCard('Доходы и расходы по месяцам',Array.from({length:12},(_,i)=>st.a+'-'+String(i+1).padStart(2,'0')));
+  else if(st.mode=='month'){const n=new Date(+st.a.slice(0,4),+st.a.slice(5,7),0).getDate();chart=ieCard('Доходы и расходы по дням',Array.from({length:n},(_,i)=>st.a+'-'+String(i+1).padStart(2,'0')),Array.from({length:n},(_,i)=>String(i+1)))}
+  else{const L=S.tx.filter(t=>t.date==st.a);chart=`<div class="c"><h2>Операции дня</h2>${opRows(L)||'<div class="k">В этот день операций нет</div>'}</div>`}
+  return `<div class="g"><div class="c"><div class="k">Доходы</div><div class="v">${r(ti)}</div></div>
+  <div class="c"><div class="k">Расходы</div><div class="v">${r(ta)}</div></div>
+  <div class="c"><div class="k">Сальдо</div><div class="v ${ti-ta<0?'rd':'gr'}">${ti-ta>=0?'+':'−'}${p(Math.abs(ti-ta))}</div><div class="k">${ti?((ti-ta)/ti*100).toFixed(1):'0.0'}% дохода</div></div>
+  <div class="c"><div class="k">Чистые сбережения</div><div class="v ${ns<0?'rd':'gr'}">${ns>=0?'+':'−'}${p(Math.abs(ns))}</div><div class="k">${ti?(ns/ti*100).toFixed(1):'0.0'}% дохода</div></div></div>
+  <div class="c"><div class="k">Расходы к доходам</div><div class="v">${ti?(ta/ti*100).toFixed(1):'0.0'}%</div><div class="bt" style="margin-top:8px"><div class="bar" style="width:${Math.min(100,ti?ta/ti*100:0)}%"></div></div><div class="k" style="margin-top:6px">В среднем ${p(ta/nd)} в день</div></div>
+  ${chart}
+  <div class="c"><h2>Главные категории расходов</h2>${top.map(([n,v])=>`<div class="b-lr"><span class="b-ln">${esc(n)}</span><b>${p(v)}</b><span class="k b-pc">${ta?(v/ta*100).toFixed(0):0}%</span></div><div class="bt" style="margin-bottom:6px"><div class="bar" style="width:${v/tm*100}%"></div></div>`).join('')||'<div class="k">Нет расходов за период</div>'}<div class="k" style="margin-top:6px">Подробнее: вкладка «Расходы»</div></div>`}
+function statEx(A,ta){
+  const ca=sumBy(A,t=>t.cat),names=Object.keys(ca).sort((x,y)=>(ca[y]||0)-(ca[x]||0)),mx=Math.max(...names.map(n=>ca[n]||0),1);
+  const must=A.filter(t=>t.kind=='m').reduce((s,t)=>s+t.amount,0);
   let tr='';
   if(st.mode!='day'){const n=st.mode=='month'?new Date(+st.a.slice(0,4),+st.a.slice(5),0).getDate():12,v=Array(n).fill(0);
     A.forEach(t=>{const i=st.mode=='month'?+t.date.slice(8)-1:+t.date.slice(5,7)-1;v[i]+=t.amount});
@@ -352,31 +400,32 @@ function stat(){
     tr=`<div class="c"><h2>${st.mode=='month'?'Траты по дням':'Траты по месяцам'}</h2><div class="tr">${v.map((x,i)=>`<div class="${x==m&&x>0?'mx':''}" style="height:${x/m*100}%" data-v="${st.mode=='year'?MN[i]:(i+1)+'.'+st.a.slice(5,7)}: ${p(x)}"></div>`).join('')}</div><div class="tl">${v.map((x,i)=>`<span>${i+1}</span>`).join('')}</div></div>`}
   const wd=Array(7).fill(0);A.forEach(t=>{wd[(new Date(t.date).getDay()+6)%7]+=t.amount});const wm=Math.max(...wd,1);
   const top=[...A].sort((x,y)=>y.amount-x.amount).slice(0,5);
-  return `<div class="c"><h2>Период</h2><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-  ${['day','month','year'].map((m,i)=>`<button data-m="${m}" class="${st.mode==m?'p':''}">${['День','Месяц','Год'][i]}</button>`).join('')}
-  ${inP('a')}</div></div>
-  <div class="g"><div class="c"><div class="k">Расходы</div><div class="v">${r(ta)}</div></div>
-  <div class="c"><div class="k">Доходы / сальдо</div><div class="v">${r(inc)}</div><div class="k ${inc-ta<0?'rd':'gr'}">${p(inc-ta)}</div></div>
-  <div class="c"><div class="k">Средний расход в день с тратами</div><div class="v">${r(days?ta/days:0)}</div></div>
-  <div class="c"><div class="k">Обязательные / необязательные</div><div class="v">${ta?(must/ta*100).toFixed(0):0}% / ${ta?(100-must/ta*100).toFixed(0):0}%</div><div class="k">${p(must)} / ${p(ta-must)}</div></div></div>
-  ${tr}
+  return `<div class="c"><div class="k">Расходы за период</div><div class="v">${r(ta)}</div></div>
   <div class="c"><h2>Структура расходов</h2>${catDonut(A)}</div>
-  <div class="c"><h2>Обязательные и необязательные</h2><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">${ta>0?donut([{v:must,col:'var(--c1)'},{v:ta-must,col:'var(--c2)'}],(must/ta*100).toFixed(0)+'%','обязательные'):''}<div style="flex:1;min-width:200px">${ta>0?legendRows([{n:'Обязательные · '+p(must),v:must,col:'var(--c1)'},{n:'Необязательные · '+p(ta-must),v:ta-must,col:'var(--c2)'}],ta):'<div class="k">Нет расходов за период</div>'}</div></div></div>
   <div class="c sc"><h2>По категориям</h2><table><tr><th>Категория</th><th class="n">Сумма</th><th class="n">Доля</th><th style="width:25%"></th></tr>
   ${names.map(n=>`<tr><td>${esc(n)}</td><td class="n">${p(ca[n])}</td><td class="n">${ta?((ca[n]||0)/ta*100).toFixed(1):'0.0'}%</td><td><div class="bt"><div class="bar" style="width:${(ca[n]||0)/mx*100}%"></div></div></td></tr>`).join('')||'<tr><td class="k">Нет данных</td></tr>'}</table></div>
-  <div class="c"><h2>По дням недели</h2>${['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map((d,i)=>`<div style="display:flex;gap:8px;align-items:center"><span style="width:24px">${d}</span><div class="bt" style="flex:1"><div class="bar" style="width:${wd[i]/wm*100}%"></div></div><span class="k" style="width:80px;text-align:right">${p(wd[i])}</span></div>`).join('')}</div>
+  <div class="c"><h2>Обязательные и необязательные</h2><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">${ta>0?donut([{v:must,col:'var(--c1)'},{v:ta-must,col:'var(--c2)'}],(must/ta*100).toFixed(0)+'%','обязательные'):''}<div style="flex:1;min-width:200px">${ta>0?legendRows([{n:'Обязательные · '+p(must),v:must,col:'var(--c1)'},{n:'Необязательные · '+p(ta-must),v:ta-must,col:'var(--c2)'}],ta):'<div class="k">Нет расходов за период</div>'}</div></div></div>
+  ${tr}
+  <div class="c"><h2>По дням недели</h2>${['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map((d,i)=>`<div style="display:flex;gap:8px;align-items:center;padding:3px 0"><span style="width:24px">${d}</span><div class="bt" style="flex:1"><div class="bar" style="width:${wd[i]/wm*100}%"></div></div><span class="k" style="width:90px;text-align:right">${p(wd[i])}</span></div>`).join('')}</div>
   <div class="c sc"><h2>Кто тратил</h2><table>${Object.entries(sumBy(A,t=>t.who||'—')).sort((x,y)=>y[1]-x[1]).map(([k,v])=>`<tr><td>${esc(k)}</td><td class="n">${p(v)}</td><td class="n">${ta?(v/ta*100).toFixed(0):0}%</td></tr>`).join('')||'<tr><td class="k">Нет данных</td></tr>'}</table></div>
-  <div class="c sc"><h2>Топ-5 крупных трат</h2><table>${top.map(t=>`<tr><td>${t.date}</td><td>${esc(t.cat)}</td><td>${esc(t.com)}</td><td class="n">${p(t.amount)}</td></tr>`).join('')||'<tr><td class="k">Нет данных</td></tr>'}</table></div>
-  ${incBlock()}`;
-}
+  <div class="c sc"><h2>Топ-5 крупных трат</h2><table>${top.map(t=>`<tr><td>${t.date.slice(8)}.${t.date.slice(5,7)}</td><td>${esc(t.cat)}</td><td>${esc(t.com)}</td><td class="n">${p(t.amount)}</td></tr>`).join('')||'<tr><td class="k">Нет данных</td></tr>'}</table></div>`}
+function statIn(I,ti){
+  const head=`<div class="c"><div class="k">Доходы за период</div><div class="b-tot">${r(ti)}</div>${incSplit(I,ti)}</div>`;
+  if(st.mode=='day')return head+`<div class="c"><h2>Доходы дня</h2>${opRows(I)||'<div class="k">В этот день доходов нет</div>'}</div>`;
+  return head+incBlock()}
+function stat(){
+  if(!st.tab)st.tab='ov';iy=st.a.slice(0,4);
+  const A=S.tx.filter(t=>t.type=='expense'&&t.date.startsWith(st.a)),I=S.tx.filter(t=>t.type=='income'&&t.date.startsWith(st.a)),ta=sumA(A),ti=sumA(I);
+  return periodHdr()+(st.tab=='ex'?statEx(A,ta):st.tab=='in'?statIn(I,ti):statOv(A,I,ta,ti))}
+
 function cats(){
   const th=document.documentElement.getAttribute('data-theme');
   return `<h2 class="sec" style="margin-top:4px">Настройки</h2><div class="c"><h2>Версия дизайна</h2><div style="display:flex;gap:8px;flex-wrap:wrap">${[['light','Светлая'],['violet','Фиолетовая'],['dark','Изумрудная']].map(t=>`<button data-tv="${t[0]}" class="${th==t[0]?'p':''}">${t[1]}</button>`).join('')}</div></div>
   <div class="c"><h2>Категории расходов</h2><div class="f"><label>Название<input id="cn" placeholder="например, Путешествия ✈️"></label>
   <label>Тип<select id="ck"><option value="m">Обязательный</option><option value="o">Необязательный</option></select></label></div><p></p><button class="p" data-act="cat">Добавить категорию</button></div>
-  <div class="c sc"><table>${S.cats.map((c,i)=>`<tr><td><input id="cne${i}" value="${esc(c.n)}" style="min-width:180px"></td><td><select id="cke${i}"><option value="m" ${c.k=='m'?'selected':''}>Обязательный</option><option value="o" ${c.k=='o'?'selected':''}>Необязательный</option></select></td><td><button data-ce="${i}">Сохранить</button><button class="x" data-cd="${i}">✕</button></td></tr>`).join('')}</table>
-  <p class="k">Название и тип можно менять: изменения применяются и ко всем уже внесённым тратам этой категории. Удаление категории не стирает внесённые траты.</p></div>
-  <div class="c"><h2>Резервная копия</h2><button data-act="exp">Показать данные (JSON)</button> <button data-act="imp">Загрузить из JSON</button><textarea id="js" style="width:100%;height:90px;margin-top:8px;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px"></textarea></div>`;
+  <div class="c"><div class="k" style="margin-bottom:6px">Название и тип сохраняются сразу после изменения и применяются ко всем внесённым тратам этой категории.</div>${S.cats.map((c,i)=>`<div class="cr"><input data-cn="${i}" value="${esc(c.n)}"><select data-ck="${i}"><option value="m" ${c.k=='m'?'selected':''}>Обязат.</option><option value="o" ${c.k=='o'?'selected':''}>Необяз.</option></select><button class="x" data-cd="${i}" aria-label="Удалить">✕</button></div>`).join('')}
+  <p class="k">Удаление категории не стирает внесённые траты.</p></div>
+  <div class="c"><h2>Резервная копия</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button data-act="exp">Показать данные (JSON)</button> <button data-act="imp">Загрузить из JSON</button></div><textarea id="js" style="width:100%;height:90px;margin-top:8px;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px"></textarea></div>`;
 }
 document.addEventListener('click',e=>{const ct=e.target.closest&&e.target.closest('.pt,.tr>div');
   document.querySelectorAll('.pt.act,.tr>div.act').forEach(x=>{if(x!==ct)x.classList.remove('act')});if(ct)ct.classList.toggle('act')});
@@ -389,6 +438,12 @@ document.addEventListener('click',e=>{
   else if(d.m){st.mode=d.m;def()}
   else if(d.del){S.tx=S.tx.filter(t=>t.id!=d.del);save()}
   else if(d.big){const x=S.tx.find(t=>t.id==d.big);if(x){x.big=!x.big;save()}}
+  else if(d.stt){st.tab=d.stt}
+  else if(d.pk){st.pk=!st.pk}
+  else if(d.pn){const k=+d.pn;
+    if(st.mode=='day'){const dt=new Date(st.a+'T00:00:00');dt.setDate(dt.getDate()+k);st.a=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')}
+    else if(st.mode=='month'){let y=+st.a.slice(0,4),m=+st.a.slice(5,7)+k;if(m>12){m=1;y++}if(m<1){m=12;y--}st.a=y+'-'+String(m).padStart(2,'0')}
+    else st.a=String(+st.a+k)}
   else if(d.tv){setTheme(d.tv)}
   else if(d.th){{const o=['light','violet','dark'],cur=document.documentElement.getAttribute('data-theme');setTheme(o[(o.indexOf(cur)+1)%3])}}
   else if(d.cv){tab='sav';svc=d.cv;window.scrollTo(0,0)}
@@ -415,8 +470,15 @@ document.addEventListener('click',e=>{
   else return;
   render();
 });
+function saveCat(i){
+  const ni=document.querySelector('[data-cn="'+i+'"]'),ki=document.querySelector('[data-ck="'+i+'"]'),old=S.cats[i];
+  const nm=(ni.value||'').trim(),k=ki.value;
+  if(!old||!nm||S.cats.some((c,j)=>j!=i&&c.n==nm)){render();return}
+  if(nm==old.n&&k==old.k)return;
+  S.tx.forEach(t=>{if(t.type=='expense'&&t.cat==old.n){t.cat=nm;t.kind=k}});S.cats[i]={n:nm,k};save();render()}
 document.addEventListener('change',e=>{
   const t=e.target;
+  if(t.dataset.cn!==undefined||t.dataset.ck!==undefined){saveCat(+(t.dataset.cn!==undefined?t.dataset.cn:t.dataset.ck));return}
   if(t.dataset.ic){const x=S.tx.find(z=>z.id==t.dataset.ic);if(x){x.cat=t.value;save();render()}return}
   if(t.dataset.iy){iy=t.value;render();return}
   if(t.dataset.mp){const k=t.dataset.mp,s=document.querySelectorAll('[data-mp="'+k+'"]'),v=(s[1]?s[1].value:s[0].dataset.y)+'-'+String(s[0].value).padStart(2,'0');
