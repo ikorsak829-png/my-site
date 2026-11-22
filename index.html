@@ -98,6 +98,14 @@ svg.lc:hover .mxp,svg.lc:has(.pt.act) .mxp{opacity:0}
 .c.pk{padding:8px 12px;margin-bottom:10px;justify-content:center}
 .cr{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}.cr:last-of-type{border-bottom:0}
 .cr input{flex:1;min-width:0}.cr select{flex:none;width:104px}.cr .x{flex:none;font-size:16px}
+.ops-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:var(--soft);border-radius:16px;padding:10px 12px;margin:0 0 6px}.ops-sum b{font-size:15px}
+.dh{display:flex;justify-content:space-between;gap:8px;font-size:12px;font-weight:600;color:var(--mu);padding:12px 2px 4px}
+.op{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+.op .ib{width:36px;height:36px}.op .ib svg{width:18px;height:18px}
+.op-s{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.opr{text-align:right;flex:none;max-width:48%}.opr .ra{white-space:nowrap;font-size:14px}.opr .k{font-size:11px}
+.opx{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--soft);border-radius:14px;margin:4px 0 6px;padding:10px}
+.opx select{flex:1;min-width:140px}.opx .x{color:var(--rd)}
 </style></head><body><div class="w">
 <h1><span class="logo"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/></svg></span>Korsak Capital <span id="sy" class="k" style="font-size:12px;font-weight:400"></span></h1>
 <nav id="nav"></nav><div id="app"></div>
@@ -116,28 +124,38 @@ const mig=o=>{o.tx.forEach(t=>{if(t.type=='expense'&&t.big===undefined&&(t.com||
 const TG=window.Telegram&&Telegram.WebApp,CS=(TG&&TG.initData&&TG.CloudStorage)||null;
 const sy=t=>{const e=document.getElementById('sy');if(e)e.textContent=t};
 const cs=(m,...a)=>new Promise((res,rej)=>CS[m](...a,(err,v)=>err?rej(err):res(v)));
-let cache={},pushT;
+let cache={},pushT,lastErr='',lastSync='',busy=false,again=false;
+const nowT=()=>new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+const errT=e=>String(e&&e.message||e||'неизвестная ошибка').slice(0,70);
+const csRetry=async(m,...a)=>{for(let i=0;i<3;i++){try{return await cs(m,...a)}catch(e){if(i==2)throw e;await new Promise(r=>setTimeout(r,400*(i+1)))}}};
 const save=()=>{S.ts=Date.now();try{localStorage.setItem('fin1',JSON.stringify(S))}catch(e){}clearTimeout(pushT);pushT=setTimeout(push,1200)};
-function chunks(s){const r=[];let i=0;while(i<s.length){let e=Math.min(i+3500,s.length);if(e<s.length){const c=s.charCodeAt(e-1);if(c>=0xD800&&c<0xDC00)e--}r.push(s.slice(i,e));i=e}return r}
+function chunks(s,n){n=n||3500;const r=[];let i=0;while(i<s.length){let e=Math.min(i+n,s.length);if(e<s.length){const c=s.charCodeAt(e-1);if(c>=0xD800&&c<0xDC00)e--}r.push(s.slice(i,e));i=e}return r}
+async function gz(str){if(typeof CompressionStream=='undefined')return null;const c=new CompressionStream('gzip'),w=c.writable.getWriter();w.write(new TextEncoder().encode(str));w.close();const u=new Uint8Array(await new Response(c.readable).arrayBuffer());let b='';for(let i=0;i<u.length;i+=0x8000)b+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(b)}
+async function ungz(b64){if(typeof DecompressionStream=='undefined')throw new Error('это устройство не умеет распаковывать данные, обновите iOS или Telegram');const b=atob(b64),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);const d=new DecompressionStream('gzip'),w=d.writable.getWriter();w.write(u);w.close();return await new Response(d.readable).text()}
 async function push(){
-  if(!CS)return;
-  try{sy('☁️ сохранение…');const ch=chunks(JSON.stringify(S)),n=ch.length,old=+(cache.n||0);
-    await Promise.all(ch.map((p,i)=>cache['d'+i]===p?0:cs('setItem','d'+i,p).then(()=>{cache['d'+i]=p})));
-    await cs('setItem','meta',JSON.stringify({n,ts:S.ts}));
-    if(old>n){const ks=[];for(let i=n;i<old;i++){ks.push('d'+i);delete cache['d'+i]}await cs('removeItems',ks)}
-    cache.n=n;sy('☁️ синхронизировано')}catch(e){sy('⚠️ ошибка синхронизации')}
+  if(!CS)return;if(busy){again=true;return}busy=true;
+  try{sy('☁️ сохранение…');const raw=JSON.stringify(S);let z=0,data=raw;
+    try{const b=await gz(raw);if(b){data=b;z=1}}catch(e){}
+    const ch=chunks(data,z?3800:3500),n=ch.length,old=+(cache.n||0);
+    for(let i=0;i<n;i++){if(cache['d'+i]!==ch[i]){await csRetry('setItem','d'+i,ch[i]);cache['d'+i]=ch[i]}}
+    await csRetry('setItem','meta',JSON.stringify({n,ts:S.ts||0,z}));
+    if(old>n){const ks=[];for(let i=n;i<old;i++){ks.push('d'+i);delete cache['d'+i]}await csRetry('removeItems',ks)}
+    cache.n=n;lastErr='';lastSync=nowT();sy('☁️ синхронизировано '+lastSync)}
+  catch(e){lastErr=errT(e);sy('⚠️ '+lastErr)}
+  busy=false;if(again){again=false;push()}
 }
-async function pull(){
+async function pull(force){
   if(!CS)return;
-  try{sy('☁️ загрузка…');const m=await cs('getItem','meta');
-    if(!m){if(S.tx.length)await push();else sy('☁️ готово');return}
+  try{sy('☁️ загрузка…');const m=await csRetry('getItem','meta');
+    if(!m){if(S.tx.length)await push();else sy('☁️ в облаке пока пусто');return}
     const mt=JSON.parse(m);
-    if(mt.ts>(S.ts||0)){const ks=[];for(let i=0;i<mt.n;i++)ks.push('d'+i);const v=await cs('getItems',ks),parts=ks.map(k=>v[k]||'');
-      const o=mig(JSON.parse(parts.join('')));ks.forEach((k,i)=>cache[k]=parts[i]);cache.n=mt.n;S=o;
-      try{localStorage.setItem('fin1',JSON.stringify(S))}catch(e){}render();sy('☁️ синхронизировано')}
+    if(force||mt.ts>(S.ts||0)){const ks=[];for(let i=0;i<mt.n;i++)ks.push('d'+i);const v=await csRetry('getItems',ks),parts=ks.map(k=>v[k]||'');
+      let str=parts.join('');if(mt.z)str=await ungz(str);
+      const o=mig(JSON.parse(str));ks.forEach((k,i)=>cache[k]=parts[i]);cache.n=mt.n;S=o;
+      try{localStorage.setItem('fin1',JSON.stringify(S))}catch(e){}render();lastErr='';lastSync=nowT();sy('☁️ синхронизировано '+lastSync)}
     else if(mt.ts<(S.ts||0)){cache.n=mt.n;await push()}
-    else sy('☁️ синхронизировано')
-  }catch(e){sy('⚠️ ошибка синхронизации')}
+    else{lastErr='';lastSync=nowT();sy('☁️ синхронизировано '+lastSync)}
+  }catch(e){lastErr=errT(e);sy('⚠️ '+lastErr)}
 }
 const $=s=>document.querySelector(s);
 const today=new Date().toISOString().slice(0,10);
@@ -269,6 +287,26 @@ function home(){
 }
 function mpick(key,val,noY){const y=+val.slice(0,4),m=+val.slice(5,7),y0=Math.min(2025,y),y1=Math.max(new Date().getFullYear()+1,y),ys=[];for(let i=y0;i<=y1;i++)ys.push(i);
   return `<span style="margin-left:8px;white-space:nowrap"><select data-mp="${key}" data-y="${y}">${MN.map((n,i)=>`<option value="${i+1}" ${i+1==m?'selected':''}>${n}</option>`).join('')}</select>${noY?'':` <select data-mp="${key}">${ys.map(v=>`<option ${v==y?'selected':''}>${v}</option>`).join('')}</select>`}</span>`}
+function opSummary(list){
+  const inc=list.filter(x=>x.type=='income').reduce((s,x)=>s+x.amount,0),ex=list.filter(x=>x.type=='expense').reduce((s,x)=>s+x.amount,0);
+  return `<div class="ops-sum"><div><div class="k">Доходы</div><b class="gr">+${p(inc)}</b></div><div><div class="k">Расходы</div><b class="rd">−${p(ex)}</b></div><div><div class="k">Операций</div><b>${list.length}</b></div></div>`}
+function opList(list){
+  if(!list.length)return '<div class="k">Пока пусто</div>';
+  const wd=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],ic={income:'ig',expense:'ir'},tt={toSav:'В сбережения',fromSav:'Из сбережений',adj:'Корректировка',sadj:'Корректировка сбережений'};
+  const dayExp={};list.forEach(x=>{if(x.type=='expense')dayExp[x.date]=(dayExp[x.date]||0)+x.amount});
+  let out='',cur='';
+  list.forEach(x=>{
+    if(x.date!=cur){cur=x.date;out+=`<div class="dh"><span>${x.date.slice(8)}.${x.date.slice(5,7)} · ${wd[new Date(x.date+'T00:00:00').getDay()]}</span><span>${dayExp[x.date]?'−'+p(dayExp[x.date]):''}</span></div>`}
+    const pl=x.type=='income'||x.type=='fromSav'||(x.type=='adj'&&x.amount>0)||(x.type=='sadj'&&x.fx>=0);
+    const foreign=!!(x.cur&&x.cur!='BYN'&&x.type!='sadj'),fe=foreign?(x.fx!=null?x.fx:x.amount/x.rate):null;
+    const main=x.type=='sadj'?(x.cur=='BYN'?p(Math.abs(x.amount)):f(Math.abs(x.fx))+' '+x.cur):foreign?f(fe)+' '+x.cur:p(Math.abs(x.amount));
+    const sub2=x.type=='sadj'&&x.cur!='BYN'?p(Math.abs(x.amount)):foreign?p(x.amount)+' · курс '+f(x.rate):'';
+    out+=`<div class="op" data-ox="${x.id}"><div class="ib ${ic[x.type]||'ia'}">${AI[x.type]||AI.adj}</div><div class="rm"><div class="rt">${esc(x.cat||tt[x.type]||'')}${x.big?' ⭐':''}</div><div class="k op-s">${esc(x.com||'')}</div></div><div class="opr"><div class="ra ${pl?'gr':''}">${pl?'+':'−'}${main}</div>${sub2?`<div class="k">${sub2}</div>`:''}</div></div>`;
+    if(String(st.ox)==String(x.id)){
+      const catSel=x.type=='income'?`<select data-ic="${x.id}">${INC.map(n=>`<option ${n==x.cat?'selected':''}>${n}</option>`).join('')}</select>`:x.type=='expense'?`<select data-ec="${x.id}">${S.cats.some(c=>c.n==x.cat)?'':`<option selected>${esc(x.cat||'')}</option>`}${S.cats.map(c=>`<option ${c.n==x.cat?'selected':''}>${esc(c.n)}</option>`).join('')}</select>`:'';
+      out+=`<div class="opx">${catSel}${x.type=='expense'?`<button data-big="${x.id}">${x.big?'★':'☆'} Крупная покупка</button>`:''}<button class="x" data-del="${x.id}">✕ Удалить</button></div>`}
+  });
+  return out}
 function ops(){
   const t=form.type,isT=t=='toSav'||t=='fromSav',cs=S.cats;
   const first=cs[0]||{n:'',k:'m'};
@@ -287,8 +325,7 @@ function ops(){
   <label id="rl" ${t=='income'?'style="display:none"':''}>Курс (BYN за 1 ед.)<input type="number" step="0.0001" id="r" inputmode="decimal" placeholder="для USD/EUR"></label>`:''}${t=='income'?'<label id="bl" style="display:none">Сумма в BYN<input type="number" step="0.01" id="b" inputmode="decimal"></label>':''}
   ${t=='expense'?'<label>Кто<select id="w"><option>Семейный</option><option>Илья</option><option>Маша</option></select></label>':''}<label>Комментарий${isT?' *':''}<input id="m" placeholder="${isT?'обязательно':'необязательно'}"></label></div>
   <p class="k" id="pv"></p><button class="p" data-act="add">Добавить</button> <span id="er" class="rd"></span></div>
-  <div class="c sc"><h2>Операции за ${mpick('om',om)}</h2><table><tr><th>Дата</th><th>Вид</th><th class="n">Сумма</th><th>Категория</th><th>Комментарий</th><th></th></tr>
-  ${list.map(x=>`<tr><td>${dfm(x.date)}</td><td>${lbl2[x.type]}</td><td class="n ${x.type=='expense'?'rd':x.type=='income'||x.type=='fromSav'?'gr':''}">${x.type=='sadj'?(x.cur=='BYN'?p(x.amount):f(x.fx)+' '+x.cur+'<div class="k">'+p(x.amount)+'</div>'):x.cur&&x.cur!='BYN'?`${f(x.fx!=null?x.fx:x.amount/x.rate)} ${x.cur}<div class="k">${p(x.amount)} · курс ${f(x.rate)}</div>`:p(x.amount)}</td><td>${x.type=='income'?`<select data-ic="${x.id}" style="padding:4px 6px">${INC.map(n=>`<option ${n==x.cat?'selected':''}>${n}</option>`).join('')}</select>`:esc(x.cat||'')}${x.big?' ⭐':''}</td><td>${esc(x.com)}</td><td>${x.type=='expense'?`<button class="x" style="color:var(--or)" title="Крупная покупка: не учитывать в подушке" data-big="${x.id}">${x.big?'★':'☆'}</button>`:''}<button class="x" data-del="${x.id}">✕</button></td></tr>`).join('')||'<tr><td colspan=6 class="k">Пока пусто</td></tr>'}</table>
+  <div class="c"><h2>Операции ${mpick('om',om)}</h2>${opSummary(list)}${opList(list)}
   <div style="margin-top:10px">${clrAsk?`<span class="rd">Удалить все ${list.length} операций за ${MN[+om.slice(5)-1]}?</span> <button class="p" data-clr="2">Да, удалить</button> <button data-clr="0">Отмена</button>`:(list.length?`<button data-clr="1">Очистить месяц</button>`:'')}</div></div>`;
 }
 function svDetail(k,name){
@@ -421,6 +458,9 @@ function stat(){
 function cats(){
   const th=document.documentElement.getAttribute('data-theme');
   return `<h2 class="sec" style="margin-top:4px">Настройки</h2><div class="c"><h2>Версия дизайна</h2><div style="display:flex;gap:8px;flex-wrap:wrap">${[['light','Светлая'],['violet','Фиолетовая'],['dark','Изумрудная']].map(t=>`<button data-tv="${t[0]}" class="${th==t[0]?'p':''}">${t[1]}</button>`).join('')}</div></div>
+  <div class="c"><h2>Синхронизация</h2><div class="k">${typeof CS!=='undefined'&&CS?(lastErr?'Ошибка: '+esc(lastErr):'Облако Telegram подключено. Последняя синхронизация: '+(lastSync||'ещё не было')):'Облако Telegram недоступно: откройте приложение через бота в Telegram.'}${TG&&TG.version?' · Telegram API '+esc(TG.version):''}</div>
+  <div class="k" style="margin-top:6px">Если на устройствах разные данные: на том, где данные верные, нажмите «Отправить», на остальных «Загрузить».</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="p" data-act="cpush">Отправить в облако с этого устройства</button><button data-act="cpull">Загрузить из облака</button></div></div>
   <div class="c"><h2>Категории расходов</h2><div class="f"><label>Название<input id="cn" placeholder="например, Путешествия ✈️"></label>
   <label>Тип<select id="ck"><option value="m">Обязательный</option><option value="o">Необязательный</option></select></label></div><p></p><button class="p" data-act="cat">Добавить категорию</button></div>
   <div class="c"><div class="k" style="margin-bottom:6px">Название и тип сохраняются сразу после изменения и применяются ко всем внесённым тратам этой категории.</div>${S.cats.map((c,i)=>`<div class="cr"><input data-cn="${i}" value="${esc(c.n)}"><select data-ck="${i}"><option value="m" ${c.k=='m'?'selected':''}>Обязат.</option><option value="o" ${c.k=='o'?'selected':''}>Необяз.</option></select><button class="x" data-cd="${i}" aria-label="Удалить">✕</button></div>`).join('')}
@@ -431,6 +471,7 @@ document.addEventListener('click',e=>{const ct=e.target.closest&&e.target.closes
   document.querySelectorAll('.pt.act,.tr>div.act').forEach(x=>{if(x!==ct)x.classList.remove('act')});if(ct)ct.classList.toggle('act')});
 document.addEventListener('click',e=>{
   const cv=e.target.closest('[data-sv]');if(cv&&!e.target.closest('button')){svc=svc==cv.dataset.sv?null:cv.dataset.sv;render();return}
+  const ox=e.target.closest('[data-ox]');if(ox&&!e.target.closest('button,select,input')){st.ox=String(st.ox)==ox.dataset.ox?null:ox.dataset.ox;render();return}
   const b=e.target.closest('button');if(!b)return;const d=b.dataset;
   if(d.t){tab=d.t;clrAsk=false}
   else if(d.clr){if(d.clr=='2'){S.tx=S.tx.filter(t=>!t.date.startsWith(om));save();clrAsk=false}else clrAsk=d.clr=='1'}
@@ -439,6 +480,8 @@ document.addEventListener('click',e=>{
   else if(d.del){S.tx=S.tx.filter(t=>t.id!=d.del);save()}
   else if(d.big){const x=S.tx.find(t=>t.id==d.big);if(x){x.big=!x.big;save()}}
   else if(d.stt){st.tab=d.stt}
+  else if(d.act=='cpush'){S.ts=Date.now();try{localStorage.setItem('fin1',JSON.stringify(S))}catch(e){}cache={};push()}
+  else if(d.act=='cpull'){pull(true)}
   else if(d.pk){st.pk=!st.pk}
   else if(d.pn){const k=+d.pn;
     if(st.mode=='day'){const dt=new Date(st.a+'T00:00:00');dt.setDate(dt.getDate()+k);st.a=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')}
@@ -479,6 +522,7 @@ function saveCat(i){
 document.addEventListener('change',e=>{
   const t=e.target;
   if(t.dataset.cn!==undefined||t.dataset.ck!==undefined){saveCat(+(t.dataset.cn!==undefined?t.dataset.cn:t.dataset.ck));return}
+  if(t.dataset.ec){const x=S.tx.find(z=>z.id==t.dataset.ec);if(x){x.cat=t.value;const cc=S.cats.find(c=>c.n==x.cat);if(cc)x.kind=cc.k;save();render()}return}
   if(t.dataset.ic){const x=S.tx.find(z=>z.id==t.dataset.ic);if(x){x.cat=t.value;save();render()}return}
   if(t.dataset.iy){iy=t.value;render();return}
   if(t.dataset.mp){const k=t.dataset.mp,s=document.querySelectorAll('[data-mp="'+k+'"]'),v=(s[1]?s[1].value:s[0].dataset.y)+'-'+String(s[0].value).padStart(2,'0');
@@ -530,5 +574,5 @@ function add(){
 render();
 if(TG){try{TG.ready();TG.expand()}catch(e){}}
 sy(CS?'☁️':'локально: синхронизация работает только внутри Telegram');
-pull();document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});
+pull();document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull()});setInterval(()=>{if(!document.hidden)pull()},15000);
 </script></body></html>
