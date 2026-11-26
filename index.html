@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Korsak Capital</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
@@ -120,6 +120,7 @@ svg.lc:hover .mxp,svg.lc:has(.pt.act) .mxp{opacity:0}
 .sw{width:26px;height:26px;border-radius:50%;flex:none;border:1px solid rgba(128,128,128,.35)}
 .bal{position:relative;overflow:hidden}.bal:after{content:"";position:absolute;right:-40px;top:-50px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.08)}.bal>*{position:relative;z-index:1}
 .cr-n{flex:none;min-width:28px;text-align:right;font-size:12px}
+input,select,textarea{font-size:16px}
 </style></head><body><div class="w">
 <h1><span class="logo"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/></svg></span>Korsak Capital <span id="sy" class="k" style="font-size:12px;font-weight:400"></span></h1>
 <nav id="nav"></nav><div id="app"></div>
@@ -316,12 +317,12 @@ function opList(list){
     const sub2=x.type=='sadj'&&x.cur!='BYN'?p(Math.abs(x.amount)):foreign?p(x.amount)+' · курс '+f(x.rate):'';
     out+=`<div class="op" data-ox="${x.id}"><div class="ib ${ic[x.type]||'ia'}">${AI[x.type]||AI.adj}</div><div class="rm"><div class="rt">${esc(x.cat||tt[x.type]||'')}${x.big?' ⭐':''}</div><div class="k op-s">${esc(x.com||'')}</div></div><div class="opr"><div class="ra ${pl?'gr':''}">${pl?'+':'−'}${main}</div>${sub2?`<div class="k">${sub2}</div>`:''}</div></div>`;
     if(String(st.ox)==String(x.id)){
-      const catSel=x.type=='income'?`<select data-ic="${x.id}">${INC.map(n=>`<option ${n==x.cat?'selected':''}>${n}</option>`).join('')}</select>`:x.type=='expense'?`<select data-ec="${x.id}">${S.cats.some(c=>c.n==x.cat)?'':`<option selected>${esc(x.cat||'')}</option>`}${S.cats.map(c=>`<option ${c.n==x.cat?'selected':''}>${esc(c.n)}</option>`).join('')}</select>`:'';
+      const catSel=x.type=='income'?`<select data-ic="${x.id}">${INC.map(n=>`<option ${n==x.cat?'selected':''}>${n}</option>`).join('')}</select>`:x.type=='expense'?`<select data-ec="${x.id}">${S.cats.some(c=>c.n==x.cat)?'':`<option selected>${esc(x.cat||'')}</option>`}${catOrder().map(([c])=>`<option ${c.n==x.cat?'selected':''}>${esc(c.n)}</option>`).join('')}</select>`:'';
       out+=`<div class="opx">${catSel}${x.type=='expense'?`<button data-big="${x.id}">${x.big?'★':'☆'} Крупная покупка</button>`:''}<button class="x" data-del="${x.id}">✕ Удалить</button></div>`}
   });
   return out}
 function ops(){
-  const t=form.type,isT=t=='toSav'||t=='fromSav',cs=S.cats;
+  const t=form.type,isT=t=='toSav'||t=='fromSav',cs=catOrder().map(x=>x[0]);
   const first=cs[0]||{n:'',k:'m'};
   const list=sorted().reverse().filter(x=>x.date.startsWith(om));
   const lbl={income:'Доход',expense:'Расход',toSav:'→ Сбережения',fromSav:'← Из сбережений'};
